@@ -1,4 +1,4 @@
-WITH base AS (                              -- створюю основу на яку потім будунакладати додаткові стовпці
+WITH base AS (                              -- create the base on top of which additional columns will be added
   SELECT ses.date
      , sespar.country
      , acc.send_interval
@@ -15,7 +15,7 @@ ON ases.ga_session_id= ses.ga_session_id
 ),
 
 
-account_met AS (                                   -- рахую метрику по аккаунтам
+account_met AS (                                   -- calculate the account metric
 SELECT b.date
      , b.country
      , b.send_interval
@@ -29,7 +29,7 @@ GROUP BY 1, 2, 3, 4, 5
 
 
 
-email_met AS (                                     -- рахую метрику по імейлам
+email_met AS (                                     -- calculate the email metrics
 SELECT DATE_ADD(b.date, INTERVAL est.sent_date DAY) AS date
      , b.country
      , b.send_interval
@@ -48,7 +48,7 @@ ON est.id_message = evt.id_message
 GROUP BY 1,2,3,4,5),
 
 
-union1 AS (                                           -- об'єдную дані
+union1 AS (                                           -- combine the data
 SELECT date
      , country
      , send_interval
@@ -77,7 +77,7 @@ FROM email_met
 ),
 
 
-final_mtrx AS (                                   -- сумую об'єднані дані аби уникнути нулів
+final_mtrx AS (                                   -- sum the combined data to avoid duplicate rows with zeros
      SELECT date
      , country
      , send_interval
@@ -92,13 +92,13 @@ GROUP BY 1,2,3,4,5
 ),
 
 
-final0 AS (SELECT *                                   -- додаю віконні функції
+final0 AS (SELECT *                                   -- add window functions
      , SUM(account_cnt) OVER(PARTITION BY country) AS total_country_account_cnt
      , SUM(sent_msg) OVER(PARTITION BY country) AS total_country_sent_cnt
 FROM final_mtrx),
 
 
-final AS (                                             -- додаю ранги
+final AS (                                             -- add ranks
      SELECT *
      , DENSE_RANK() OVER(ORDER BY total_country_account_cnt DESC) AS rank_total_country_account_cnt
      , DENSE_RANK() OVER(ORDER BY total_country_sent_cnt DESC) AS rank_total_country_sent_cnt
@@ -106,7 +106,7 @@ final AS (                                             -- додаю ранги
 )
 
 
-SELECT *                                     -- вивожу фінальні результати з фільтруванням
+SELECT *                                     -- output the final results with filtering
 FROM final
 WHERE rank_total_country_account_cnt <= 10
      OR rank_total_country_sent_cnt <= 10
